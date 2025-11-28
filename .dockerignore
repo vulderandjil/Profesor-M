@@ -14,7 +14,7 @@ vendor/bundle
 # Ignore all default key files.
 /config/master.key
 /config/credentials/*.key
-gcp-key.json
+/gcp-key.json
 
 # Ignore all logfiles and tempfiles.
 /log/*
