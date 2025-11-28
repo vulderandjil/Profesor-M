@@ -15,7 +15,7 @@ module Documents
       
       # Busca los fragmentos más cercanos dentro del tópico específico
       # neighbor facilita esto con el scope nearest_neighbors
-      results = @topic.document_chunks.nearest_neighbors(query_embedding, LIMIT)
+      results = @topic.document_chunks.nearest_neighbors(:embedding, query_embedding, distance: "cosine").first(LIMIT)
 
       # Retornamos los fragmentos completos para tener acceso al ID y al contenido
       results

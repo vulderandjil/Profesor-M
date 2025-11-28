@@ -119,8 +119,9 @@ module Ai
       parts = content.fields["parts"].list_value.values.first
       parts.struct_value.fields["text"].string_value
     rescue StandardError => e
-      Rails.logger.error("Vertex AI Error: #{e.message}")
-      "Error generando respuesta. Por favor intenta de nuevo."
+      Rails.logger.error(...)
+      # Lanzar un error personalizado para que el Job lo reintente
+      raise AiGenerationError, "Fallo temporal de Vertex AI" 
     end
   end
 end

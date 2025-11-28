@@ -1,7 +1,6 @@
 class DocumentChunk < ApplicationRecord
   belongs_to :topic
-
-  scope :nearest_neighbors, ->(embedding, limit = 5) {
-    order("embedding <-> ARRAY[#{embedding.join(',')}]::vector").limit(limit)
-  }
+  
+  # Agrega esta línea para activar la magia de la gema neighbor
+  has_neighbors :embedding
 end
