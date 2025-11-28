@@ -43,6 +43,9 @@ Ejecute los siguientes comandos en la consola de Ruby:
 Esto leerá el PDF, generará vectores y los guardará en Postgres.
     Documents::IngestService.new(topic.id, "manual.pdf").call
 
+    service = IngestService.new(topic.id, "app/manualruby.pdf")
+    service.call
+
 Si el proceso es exitoso, verá un mensaje de confirmación y los vectores almacenados en la tabla document_chunks.
 
 # Paso 2: Interacción con el Chat
