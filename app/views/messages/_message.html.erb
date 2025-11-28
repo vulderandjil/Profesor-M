@@ -1,0 +1,43 @@
+<% is_user = message.user? %>
+
+<div class="flex w-full <%= is_user ? 'justify-end' : 'justify-start' %> animate-fade-in-up" id="<%= dom_id(message) %>">
+  
+  <div class="flex flex-col max-w-[85%] md:max-w-[70%]">
+    
+    <div class="rounded-2xl px-5 py-3 shadow-sm text-sm leading-relaxed
+                <%= is_user ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none' %>">
+      
+      <% unless is_user %>
+        <span class="text-xs font-bold text-blue-600 mb-1 block">CodeMentor AI</span>
+      <% end %>
+
+      <div class="prose <%= is_user ? 'prose-invert' : 'prose-sm' %> max-w-none">
+        <%= simple_format(message.content) %>
+      </div>
+    </div>
+
+    <% if message.assistant? && message.respond_to?(:sources) && message.sources.present? %>
+      <div class="mt-2 ml-2">
+        <details class="group">
+          <summary class="list-none flex items-center cursor-pointer text-xs text-gray-500 hover:text-blue-600 transition-colors">
+            <span class="mr-1 transition-transform group-open:rotate-90">▶</span>
+            <span>Ver <%= message.sources.count %> fuentes consultadas</span>
+          </summary>
+          
+          <div class="mt-2 pl-3 border-l-2 border-gray-300 space-y-2">
+            <% message.sources.each do |source| %>
+              <div class="bg-gray-100 p-2 rounded text-xs text-gray-600">
+                <span class="font-semibold block">Página/Sección: <%= source['page'] || 'N/A' %></span>
+                <p class="truncate font-mono opacity-75">"<%= source['text_preview'] %>..."</p>
+              </div>
+            <% end %>
+          </div>
+        </details>
+      </div>
+    <% end %>
+
+    <span class="text-[10px] text-gray-400 mt-1 px-1 <%= is_user ? 'text-right' : 'text-left' %>">
+      <%= message.created_at.strftime("%H:%M") %>
+    </span>
+  </div>
+</div>
