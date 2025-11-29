@@ -23,7 +23,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Autenticación con Google Cloud usando la Service Account Key
       - name: Google Auth
         uses: google-github-actions/auth@v2
         with:
@@ -54,7 +53,6 @@ jobs:
             RAILS_SERVE_STATIC_FILES=true
             GOOGLE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
           secrets: |
-            # Mapeamos secretos de Secret Manager a variables de entorno
             DATABASE_URL=DATABASE_URL_PROD:latest
             RAILS_MASTER_KEY=RAILS_MASTER_KEY:latest
             GOOGLE_CREDENTIALS=GCP_CREDENTIALS_JSON:latest
