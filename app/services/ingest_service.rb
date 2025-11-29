@@ -1,68 +1,124 @@
+require "google/cloud/storage"
+require "pdf-reader"
+require "tempfile"
+
 class IngestService
-  def initialize(topic_id, file_path)
+  # Configuración del Bucket
+  BUCKET_NAME = "mentor_ia_bd"
+  FOLDER_PREFIX = "pdf/" # La carpeta dentro del bucket donde están los archivos
+
+  def initialize(topic_id, filename)
     @topic = Topic.find(topic_id)
-    @file_path = file_path
+    @filename = filename
+    
+    # Inicializa el cliente de Storage usando las credenciales del entorno
+    @storage = Google::Cloud::Storage.new(
+      project_id: ENV.fetch("GOOGLE_PROJECT_ID"),
+      credentials: ENV.fetch("GOOGLE_CREDENTIALS")
+    )
   end
 
   def call
-    text = extract_text
-    chunks = split_text(text)
+    puts "⬇Iniciando descarga de: #{@filename} desde GCS..."
     
-    chunks.each do |chunk|
-      vector = Ai::EmbeddingGenerator.generate(chunk)
-      @topic.document_chunks.create!(
-        content: chunk,
-        embedding: vector
-      )
+    # 1. Descargar desde GCS a un archivo temporal
+    temp_pdf = download_from_bucket
+    
+    begin
+      puts "Procesando archivo temporal: #{temp_pdf.path}..."
+      
+      # 2. Extraer texto usando el archivo temporal
+      text = extract_text(temp_pdf.path)
+      
+      # 3. Dividir texto (usando tu lógica recursiva PRO)
+      chunks = split_text(text)
+      
+      puts "🧩 Generando vectores para #{chunks.size} fragmentos..."
+
+      # 4. Vectorización y guardado
+      chunks.each do |chunk|
+        # Usamos tu generador con caché
+        vector = Ai::EmbeddingGenerator.generate(chunk)
+        
+        @topic.document_chunks.create!(
+          content: chunk,
+          embedding: vector,
+          # Opcional: Guardamos la fuente original para referencia futura
+          metadata: { source: "gs://#{BUCKET_NAME}/#{FOLDER_PREFIX}#{@filename}" }
+        )
+        print "." # Feedback visual
+      end
+    ensure
+      # 5. Limpieza: Importante cerrar y borrar el tempfile
+      if temp_pdf
+        temp_pdf.close
+        temp_pdf.unlink 
+        puts "\n🧹 Archivo temporal eliminado."
+      end
     end
+    
+    puts "\nIngesta desde GCS completada con éxito."
   end
 
   private
 
-  def extract_text
-    # Lógica simple para PDF. Si es .txt o .rb, leer directo.
-    reader = PDF::Reader.new(@file_path)
+  def download_from_bucket
+    bucket = @storage.bucket(BUCKET_NAME)
+    # Construimos la ruta completa: pdf/nombre_archivo.pdf
+    file_path = "#{FOLDER_PREFIX}#{@filename}"
+    gcs_file = bucket.file(file_path)
+
+    unless gcs_file
+      raise "Error: El archivo '#{file_path}' no existe en el bucket '#{BUCKET_NAME}'"
+    end
+
+    # Crear un archivo temporal donde descargaremos el contenido
+    # 'binmode' es vital para archivos binarios como PDFs
+    temp_file = Tempfile.new([@filename, ".pdf"], binmode: true)
+    
+    # Descargar el contenido del bucket al archivo temporal
+    gcs_file.download(temp_file.path)
+    
+    temp_file
+  end
+
+  def extract_text(file_path)
+    reader = PDF::Reader.new(file_path)
     reader.pages.map(&:text).join("\n")
+  rescue StandardError => e
+    raise "Error leyendo el PDF: #{e.message}"
   end
 
   def split_text(text)
-    # Implementación de un divisor de texto recursivo.
-    # Intenta dividir por los separadores en orden para mantener el contexto.
-    chunk_size = 1000 # Tamaño de fragmento deseado
-    chunk_overlap = 100 # Superposición para no perder contexto entre fragmentos
-    separators = ["\n\n", "\n", " ", ""] # De más general a más específico
+    chunk_size = 1000
+    chunk_overlap = 100
+    separators = ["\n\n", "\n", " ", ""]
 
     recursive_split(text, separators, chunk_size, chunk_overlap)
   end
 
   def recursive_split(text, separators, chunk_size, chunk_overlap)
     final_chunks = []
-    # Toma el primer separador de la lista
     separator = separators.first
     
-    # Si no quedan separadores o el texto es pequeño, se devuelve como un solo fragmento.
     if separator.nil? || text.length <= chunk_size
       return [text] if text.present?
       return []
     end
 
-    # Intenta dividir el texto con el separador actual
     splits = text.split(separator)
     current_chunk = ""
 
     splits.each do |part|
-      # Si añadir la siguiente parte excede el tamaño, guarda el fragmento actual y empieza uno nuevo.
       if (current_chunk + separator + part).length > chunk_size && current_chunk.present?
         final_chunks << current_chunk
-        # El nuevo fragmento empieza con una superposición del anterior.
         current_chunk = current_chunk[-chunk_overlap, chunk_overlap] + separator + part
       else
         current_chunk += (current_chunk.empty? ? "" : separator) + part
       end
     end
-    final_chunks << current_chunk if current_chunk.present? # Añade el último fragmento
+    final_chunks << current_chunk if current_chunk.present?
 
     final_chunks
   end
-
 end

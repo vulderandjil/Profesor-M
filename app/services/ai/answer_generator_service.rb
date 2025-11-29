@@ -10,7 +10,7 @@ module Ai
     def initialize(context_chunks, user_question)
       @context = self.class.build_context_with_citations(context_chunks)
       @question = user_question
-      @client = VertexAIClient.client
+      @client = VertexAiClient.client
     end
 
     def call

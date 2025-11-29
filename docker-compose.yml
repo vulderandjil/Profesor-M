@@ -20,7 +20,7 @@ services:
       - db
     environment:
       DATABASE_URL: postgres://postgres:password@db:5432/code_mentor_development
-      GOOGLE_PROJECT_ID: tu-project-id-gcp
+      GOOGLE_PROJECT_ID: profesor-codigo
       GOOGLE_CREDENTIALS: /rails/gcp-key.json # Montaremos esto luego
 
 volumes:

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_24_102057) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_28_080953) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -27,6 +27,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_24_102057) do
     t.text "content"
     t.datetime "created_at", null: false
     t.vector "embedding", limit: 768
+    t.jsonb "metadata"
     t.bigint "topic_id", null: false
     t.datetime "updated_at", null: false
     t.index ["topic_id"], name: "index_document_chunks_on_topic_id"

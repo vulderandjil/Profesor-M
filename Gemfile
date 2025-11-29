@@ -83,3 +83,6 @@ end
   gem 'pdf-reader'
 
   gem 'pgvector'
+
+  # para prodducción
+  gem "google-cloud-storage"

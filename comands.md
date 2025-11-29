@@ -3,6 +3,8 @@ rails generate migration EnableVectorExtension
 
 # para inicializar el proyecto
 docker compose up --build
+# 
+docker compose up -d --build
 
 # si da error de cache
 docker builder prune -a
@@ -65,11 +67,10 @@ La respuesta debe ser coherente con el PDF subido.
 
 Al final del mensaje de la IA, debe aparecer un desplegable indicando las Fuentes Consultadas.
 
+ # pruebas cloud
 
-docker run -it --rm \
-  -e DATABASE_URL="postgres://postgres:password@host.docker.internal:5432/code_mentor_production" \
-  -e RAILS_MASTER_KEY="580af9be3824433a2d5af3aabf6890c2" \
-  -e GOOGLE_PROJECT_ID="profesor-codigo" \
-  -e GOOGLE_CREDENTIALS=gcp-key.json \
-  -p 3000:3000 \
-  code_mentor_prod
+topic = Topic.first || Topic.create(title: "Prueba Cloud")
+
+IngestService.new(Topic.first.id, "manual_ruby_basico.pdf").call
+
+docker compose exec web bundle exec  rails runner "puts ENV.fetch('GOOGLE_CREDENTIALS')"

@@ -21,14 +21,14 @@ module Ai
       Rails.logger.info "Embedding cache miss. Generating new embedding for hash: #{text_hash}"
 
       # 3. Si no está en caché, generar el embedding llamando a la API.
-      client = VertexAIClient.client
+      client = VertexAiClient.client
 
       # Formato correcto para Gemini Embeddings
       instance = Google::Protobuf::Value.new(
         struct_value: Google::Protobuf::Struct.from_hash({ "content" => text })
       )
 
-      endpoint_path = "projects/#{ENV['GOOGLE_PROJECT_ID']}/locations/#{VertexAIClient::REGION}/publishers/google/models/text-embedding-004"
+      endpoint_path = "projects/#{ENV['GOOGLE_PROJECT_ID']}/locations/#{VertexAiClient::REGION}/publishers/google/models/text-embedding-004"
 
       response = client.predict(
         endpoint: endpoint_path,
