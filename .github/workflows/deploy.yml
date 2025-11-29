@@ -1,0 +1,60 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  REPO_NAME: code-mentor-repo
+  SERVICE_NAME: code-mentor-app
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Autenticación con Google Cloud usando la Service Account Key
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build and Push Container
+        run: |
+          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          region: ${{ env.REGION }}
+          flags: "--allow-unauthenticated" # Para que sea público (quita esto si quieres login previo)
+          env_vars: |
+            RAILS_ENV=production
+            RAILS_LOG_TO_STDOUT=true
+            RAILS_SERVE_STATIC_FILES=true
+            GOOGLE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
+          secrets: |
+            # Mapeamos secretos de Secret Manager a variables de entorno
+            DATABASE_URL=DATABASE_URL_PROD:latest
+            RAILS_MASTER_KEY=RAILS_MASTER_KEY:latest
+            GOOGLE_CREDENTIALS=GCP_CREDENTIALS_JSON:latest
