@@ -46,13 +46,13 @@ jobs:
           service: ${{ env.SERVICE_NAME }}
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
           region: ${{ env.REGION }}
-          flags: "--allow-unauthenticated" # Para que sea público (quita esto si quieres login previo)
+          flags: "--allow-unauthenticated"
           env_vars: |
             RAILS_ENV=production
             RAILS_LOG_TO_STDOUT=true
             RAILS_SERVE_STATIC_FILES=true
             GOOGLE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
-          secrets: |
+          update-secrets: |
             DATABASE_URL=DATABASE_URL_PROD:latest
             RAILS_MASTER_KEY=RAILS_MASTER_KEY:latest
             GOOGLE_CREDENTIALS=GCP_CREDENTIALS_JSON:latest
