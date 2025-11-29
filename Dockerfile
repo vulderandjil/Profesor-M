@@ -10,10 +10,10 @@ WORKDIR /rails
 
 # Variables de entorno base (ajustadas para desarrollo)
 # - No activar modo deployment de Bundler y no excluir el grupo :development
-ENV RAILS_ENV="development" \
-    BUNDLE_DEPLOYMENT="0" \
+ENV RAILS_ENV="production" \
+    BUNDLE_DEPLOYMENT="1" \
     BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="test:production"
+    BUNDLE_WITHOUT="development"
 
 # Instalar paquetes base necesarios para runtime
 # libvips es para procesamiento de imágenes (ActiveStorage)
