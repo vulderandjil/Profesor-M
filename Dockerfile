@@ -1,48 +1,59 @@
-# syntax = docker/dockerfile:1
 ARG RUBY_VERSION=3.2.2
-FROM registry.docker.com/library/ruby:$RUBY_VERSION-slim AS base
+FROM ruby:$RUBY_VERSION-slim AS base
 
-WORKDIR /rails
+WORKDIR /app
 
-# --- CORRECCIÓN CRÍTICA ---
-# Instalamos gemas de PROD y excluimos development
-ENV RAILS_ENV="production" \
-    BUNDLE_DEPLOYMENT="1" \
-    BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development"
+ENV RAILS_ENV=production \
+    BUNDLE_DEPLOYMENT=1 \
+    BUNDLE_WITHOUT="development test" \
+    BUNDLE_PATH=/usr/local/bundle
 
+# Dependencias base
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libvips postgresql-client && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+    apt-get install --no-install-recommends -y \
+    build-essential \
+    libpq-dev \
+    libvips \
+    curl \
+    git \
+    postgresql-client && \
+    rm -rf /var/lib/apt/lists/*
 
 FROM base AS build
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libpq-dev pkg-config
-RUN gem install bundler -v 2.4.22 
 
 COPY Gemfile Gemfile.lock ./
-RUN bundle install && \
-    rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
+
+RUN gem install bundler && bundle install
 
 COPY . .
-RUN bundle exec bootsnap precompile app/ lib/
-# Usamos dummy key para assets
-RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
+
+# Precompile assets
+RUN SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile
 
 FROM base
-RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash
+
+# Crear usuario no-root
+RUN addgroup --system --gid 1000 rails && \
+    adduser --system --uid 1000 --gid 1000 --home /home/rails rails
+
+USER rails
+
+WORKDIR /app
 
 COPY --from=build --chown=rails:rails /usr/local/bundle /usr/local/bundle
-COPY --from=build --chown=rails:rails /rails /rails
+COPY --from=build --chown=rails:rails /app /app
 
-RUN mkdir -p /rails/tmp /rails/log /rails/storage /rails/db && \
-    chown -R rails:rails /rails
+# Crear carpetas necesarias
+RUN mkdir -p tmp log storage && \
+    chmod -R 755 tmp log storage
 
-USER rails:rails
+# ---- Cloud Run usa PORT ----
+EXPOSE 8080
 
-ENTRYPOINT ["/rails/bin/docker-entrypoint"]
-EXPOSE 3000
+ENTRYPOINT ["bin/docker-entrypoint"]
 
-# --- CORRECCIÓN CRÍTICA: Binding a 0.0.0.0 ---
-CMD ["./bin/rails", "server", "-b", "0.0.0.0"]
+# ---- Puma config ----
+ENV RAILS_LOG_TO_STDOUT=true
+ENV RAILS_SERVE_STATIC_FILES=true
+
+CMD ["bash", "-c", "bundle exec puma -C config/puma.rb"]

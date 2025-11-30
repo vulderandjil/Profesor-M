@@ -1,8 +1,22 @@
 #!/bin/bash -e
 
-# If running the rails server then create or migrate existing database
-#if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
- # ./bin/rails db:prepare
-#fi
+echo "▶ Iniciando docker-entrypoint..."
 
-exec "${@}"
+# Detectar si vamos a correr un servidor Rails
+IS_SERVER=false
+if [[ "$*" == *"rails server"* ]] || [[ "$*" == *"puma"* ]]; then
+  IS_SERVER=true
+fi
+
+# Preparar la base de datos si estamos levantando el servidor
+if [ "$IS_SERVER" = true ]; then
+  echo "▶ Ejecutando db:prepare (Rails manejará si es necesario correr migraciones)"
+  bundle exec rails db:prepare || {
+    echo "⚠ db:prepare falló, intentando nuevamente en 5 segundos..."
+    sleep 5
+    bundle exec rails db:prepare
+  }
+fi
+
+echo "▶ Ejecutando comando final: $@"
+exec "$@"
