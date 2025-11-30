@@ -1,2 +1,8 @@
 production:
   enabled: false
+
+development:
+  enabled: false
+
+test:
+  enabled: false
