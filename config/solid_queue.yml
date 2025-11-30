@@ -1,8 +1,9 @@
+# config/solid_queue.yml
 production:
-  enabled: false
+  database: primary
 
 development:
-  enabled: false
+  database: primary
 
 test:
-  enabled: false
+  database: primary

@@ -1,6 +1,9 @@
 ARG RUBY_VERSION=3.2.2
 FROM ruby:$RUBY_VERSION-slim AS base
 
+ARG DISABLE_RECURRING
+ENV DISABLE_RECURRING=$DISABLE_RECURRING
+
 WORKDIR /app
 
 ENV RAILS_ENV=production \
@@ -28,7 +31,7 @@ RUN gem install bundler && bundle install
 COPY . .
 
 # Precompile assets
-RUN SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile
+RUN DISABLE_RECURRING=1 SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile
 
 FROM base
 
