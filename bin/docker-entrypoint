@@ -2,21 +2,17 @@
 
 echo "▶ Iniciando docker-entrypoint..."
 
-# Detectar si vamos a correr un servidor Rails
-IS_SERVER=false
-if [[ "$*" == *"rails server"* ]] || [[ "$*" == *"puma"* ]]; then
-  IS_SERVER=true
+# Asegurar que DATABASE_URL existe
+if [ -z "$DATABASE_URL" ]; then
+  echo "❌ ERROR: DATABASE_URL no está seteada"
+  exit 1
 fi
 
-# Preparar la base de datos si estamos levantando el servidor
-if [ "$IS_SERVER" = true ]; then
-  echo "▶ Ejecutando db:prepare (Rails manejará si es necesario correr migraciones)"
-  bundle exec rails db:prepare || {
-    echo "⚠ db:prepare falló, intentando nuevamente en 5 segundos..."
-    sleep 5
-    bundle exec rails db:prepare
-  }
-fi
+echo "▶ DATABASE_URL detectada correctamente"
 
-echo "▶ Ejecutando comando final: $@"
+# Preparar DB solamente si existe (Rails manejará migraciones)
+echo "▶ Ejecutando db:prepare..."
+bundle exec rails db:prepare || true
+
+echo "▶ Iniciando Puma..."
 exec "$@"
