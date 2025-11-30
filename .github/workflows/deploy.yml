@@ -33,11 +33,6 @@ jobs:
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
-      - name: Verify SolidQueue references
-        run: |
-          echo "Searching for SolidQueue references..."
-          grep -R "SolidQueue" -n config || echo "No references found"
-
       - name: Build and Push Container
         run: |
           IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
