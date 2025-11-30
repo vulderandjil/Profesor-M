@@ -1,9 +1,0 @@
-# config/solid_queue.yml
-production:
-  database: primary
-
-development:
-  database: primary
-
-test:
-  database: primary
