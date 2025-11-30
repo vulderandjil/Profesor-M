@@ -1,5 +1,4 @@
 class AiResponseJob < ApplicationJob
-  queue_as :default
 
   def perform(chat_session_id)
     chat_session = ChatSession.find(chat_session_id)
